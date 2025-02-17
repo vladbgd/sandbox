@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus_config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  docker-exporter:
+    image: prom/node-exporter
+    container_name: docker-exporter
+    command:
+#      - '--web.listen-address=:9323'
+      - '--web.listen-address=:9100'  # Set the correct port for node-exporter
+    ports:
+      - "9100:9100"  # Ensure the port is exposed
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"  # Expose Grafana on port 3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set the admin password
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus  # Ensure Prometheus is up before Grafana starts
+
+
+volumes:
+  prometheus_data:
+
+networks:
+  monitoring:
+    driver: bridge
